@@ -1,5 +1,5 @@
 <?php
-
+// --- SETUP & UTILITIES ---
 $example_encrypt = "CAT";
 $example_decrypt = "00010101 00010111 00000010";
 
@@ -14,7 +14,7 @@ function strToBinary($string) {
 }
 
 function binaryToStr($binary) {
-    $binary = str_replace(' ', '', $binary);
+    $binary = str_replace(' ', '', $binary); 
     if (strlen($binary) % 8 !== 0) return null; 
     $chars = str_split($binary, 8);
     $str = '';
@@ -24,29 +24,24 @@ function binaryToStr($binary) {
     return $str;
 }
 
-$res_bin = ""; 
-$res_text = "";
-$error = "";
+// --- LOGIC PROCESSING ---
+$res_bin = $res_text = $error = "";
 $is_generated = false;
-$mode = $_POST['mode'] ?? 'encrypt';
+$mode = $_POST['mode'] ?? 'encrypt'; 
 
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'generate') {
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
     $input = $_POST['inputString'] ?? '';
     $key = $_POST['keyString'] ?? '';
 
     if ($mode == 'decrypt' && preg_match('/^[01 ]+$/', $input)) {
-        $converted_input = binaryToStr($input);
-        if ($converted_input !== null) {
-            $input = $converted_input;
-        }
+        $input = binaryToStr($input) ?? $input;
     }
 
     if (strlen($input) !== strlen($key)) {
-        $error = "Error: Text and Key must be the same character length! (Input: " . strlen($input) . ", Key: " . strlen($key) . ")";
+        $error = "Length Mismatch! Input: " . strlen($input) . ", Key: " . strlen($key);
     } else {
-        $xor_result = $input ^ $key;
-        $res_bin = strToBinary($xor_result);
-        $res_text = $xor_result;
+        $res_text = $input ^ $key; 
+        $res_bin = strToBinary($res_text);
         $input_bin = strToBinary($input);
         $key_bin = strToBinary($key);
         $is_generated = true;
@@ -60,170 +55,139 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     <meta charset="UTF-8">
     <title>Stream Cipher Engine</title>
     <style>
-        body { 
-            font-family: 'Courier New', monospace; 
-            background: #FFCD90; 
-            color: #FFCD90; 
-        }
+        body { font-family: 'Courier New', monospace; background: #FFCD90; padding: 20px; color: #333; }
         
         .card { 
-            background: #FFFFFF; 
+            background: #fff; 
             border: 2px solid #FF8C00; 
             padding: 30px; 
-            max-width: 750px; 
+            max-width: 600px; 
             margin: auto; 
             border-radius: 12px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
         }
-
-        h2 { text-align: center; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 25px; color: #FF8C00; }
         
-        .mode-selector { display: flex; gap: 10px; margin-bottom: 20px; }
-        .mode-selector label { 
-            flex: 1; 
-            padding: 12px; 
-            border: 1px solid #FF8C00; 
-            color: #FF8C00;
-            text-align: center; 
-            cursor: pointer; 
-            transition: 0.3s; 
-            font-size: 0.9rem; 
-            border-radius: 4px;
-            font-weight: bold;
+        h2 { text-align: center; color: #FF8C00; margin-bottom: 25px; letter-spacing: 2px; }
+        
+        /* Centered button group in one line */
+        .tab-group { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            margin-bottom: 25px; 
+            gap: 15px; /* Space between buttons */
         }
-        .mode-selector input { display: none; }
-        .mode-selector input:checked + label { 
-            background: #FF8C00; 
-            color: #FFFFFF; 
+        
+        .tab-btn { 
+            padding: 12px 25px; 
+            background: none; 
+            color: #FF8C00; 
+            border: 2px solid #FF8C00; 
+            font-weight: bold; 
+            cursor: pointer; 
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            min-width: 140px; /* Ensures buttons have uniform size */
         }
 
-        .field-group { margin-bottom: 15px; }
-        label.input-label { display: block; margin-top: 15px; font-size: 0.8rem; color: #666666; text-transform: uppercase; font-weight: bold; }
+        .tab-btn:hover { background: rgba(255, 140, 0, 0.1); }
+
+        .tab-btn.active { 
+            background: #FF8C00; 
+            color: #fff; 
+            box-shadow: 0 4px 8px rgba(255, 140, 0, 0.3);
+        }
+        
+        label { display: block; margin-top: 15px; font-size: 0.85rem; font-weight: bold; color: #555; }
         
         input[type="text"] { 
             width: 100%; 
-            padding: 15px; 
+            padding: 12px; 
             margin-top: 5px; 
-            background: #F9F9F9; 
-            border: 1px solid #CCCCCC; 
-            color: #333333; 
+            border: 1px solid #ccc; 
+            border-radius: 6px; 
             box-sizing: border-box; 
-            font-size: 1.1rem; 
-            border-radius: 4px; 
-            outline: none;
+            font-size: 1rem;
         }
-        input[type="text"]:focus { border-color: #FF8C00; background: #FFFFFF; }
 
-        .btn-container { display: flex; gap: 10px; margin-top: 25px; }
-        button, .back-btn { 
-            flex: 1; 
-            padding: 18px; 
+        input[type="text"]:focus { border-color: #FF8C00; outline: none; background: #fffaf5; }
+        
+        .main-submit { 
+            width: 100%; 
+            padding: 15px; 
+            margin-top: 25px; 
+            background: #FF8C00; 
+            color: #fff; 
+            border: none; 
+            border-radius: 8px; 
             font-weight: bold; 
             cursor: pointer; 
-            border: none; 
-            text-transform: uppercase; 
-            font-size: 0.9rem; 
-            transition: 0.2s; 
-            border-radius: 4px; 
-            text-decoration: none; 
-            text-align: center; 
-        }
-        
-        button { background: #FF8C00; color: #FFFFFF; }
-        button:hover { background: #e67e00; }
-        
-        .back-btn { background: #333333; color: #FFFFFF; }
-        .back-btn:hover { background: #000000; }
-
-        .bit-view { 
-            background: #F0F0F0; 
-            padding: 20px; 
-            margin-top: 30px; 
-            border-left: 5px solid #FF8C00; 
-            border-radius: 4px; 
-        }
-        
-        .label-tag { color: #FF8C00; font-size: 0.75rem; text-transform: uppercase; display: block; margin-bottom: 5px; font-weight: bold; }
-        .val-bin { word-break: break-all; margin-bottom: 15px; display: block; font-size: 0.95rem; letter-spacing: 1px; color: #333333; }
-        
-        .val-text { 
-            font-size: 1.5rem; 
-            color: #FF8C00; 
-            padding: 10px 15px; 
-            display: inline-block; 
-            border: 2px solid #FF8C00; 
-            border-radius: 4px; 
-            background: #FFFFFF;
+            font-size: 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
-        .error { 
-            color: #FFFFFF; 
-            text-align: center; 
-            border: 1px solid #ff4444; 
-            padding: 12px; 
-            margin-bottom: 20px; 
-            background: #D93025; 
-            border-radius: 4px;
-        }
-        hr { border: 0; border-top: 1px dashed #FF8C00; margin: 20px 0; }
+        .main-submit:hover { background: #e67e00; }
+        
+        .result { background: #fdfdfd; padding: 20px; margin-top: 25px; border-left: 5px solid #FF8C00; border-radius: 4px; border: 1px solid #eee; }
+        
+        .error { color: #fff; background: #d93025; padding: 12px; text-align: center; border-radius: 6px; margin-bottom: 15px; font-weight: bold; }
+        
+        .back-btn { display: block; text-align: center; margin-top: 20px; color: #888; font-size: 0.8rem; text-decoration: none; }
+        .back-btn:hover { color: #FF8C00; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>Stream Cipher Engine</h2>
+    <h2>STREAM CIPHER</h2>
 
-    <?php if ($error): ?>
-        <div class="error"><?php echo $error; ?></div>
-    <?php endif; ?>
+    <?php if ($error): ?><div class="error"><?= $error ?></div><?php endif; ?>
+
+    <div class="tab-group">
+        <form method="post">
+            <input type="hidden" name="mode" value="encrypt">
+            <button type="submit" class="tab-btn <?= $mode == 'encrypt' ? 'active' : '' ?>">ENCRYPT</button>
+        </form>
+        <form method="post">
+            <input type="hidden" name="mode" value="decrypt">
+            <button type="submit" class="tab-btn <?= $mode == 'decrypt' ? 'active' : '' ?>">DECRYPT</button>
+        </form>
+    </div>
 
     <form method="post">
         <input type="hidden" name="action" value="generate">
-        
-        <div class="mode-selector">
-            <input type="radio" id="enc" name="mode" value="encrypt" onchange="this.form.submit()" <?php echo $mode != 'decrypt' ? 'checked' : ''; ?>>
-            <label for="enc">🔒 ENCRYPT</label>
+        <input type="hidden" name="mode" value="<?= $mode ?>">
+
+        <?php if ($mode == 'encrypt'): ?>
+            <label>ENTER PLAINTEXT (Words):</label>
+            <input type="text" name="inputString" placeholder="Ex: <?= $example_encrypt ?>" required value="<?= htmlspecialchars($_POST['inputString'] ?? '') ?>">
             
-            <input type="radio" id="dec" name="mode" value="decrypt" onchange="this.form.submit()" <?php echo $mode == 'decrypt' ? 'checked' : ''; ?>>
-            <label for="dec">🔓 DECRYPT</label>
-        </div>
+            <label>ENTER KEY (Secret):</label>
+            <input type="text" name="keyString" placeholder="Ex: VVV" required value="<?= htmlspecialchars($_POST['keyString'] ?? '') ?>">
+            
+            <button type="submit" class="main-submit">GENERATE CIPHER BITS</button>
 
-        <div class="field-group">
-            <label class="input-label"><?php echo $mode == 'decrypt' ? 'Cipher Bits (Input)' : 'Plaintext (Input)'; ?>:</label>
-            <input type="text" name="inputString" 
-                   placeholder="Ex: <?php echo ($mode == 'decrypt') ? $example_decrypt : $example_encrypt; ?>" 
-                   required value="<?php echo htmlspecialchars($_POST['inputString'] ?? ''); ?>">
-        </div>
-
-        <div class="field-group">
-            <label class="input-label">Secret Key:</label>
-            <input type="text" name="keyString" placeholder="Ex: VVV" required value="<?php echo htmlspecialchars($_POST['keyString'] ?? ''); ?>">
-        </div>
-
-        <div class="btn-container">
-            <button type="submit"><?php echo $mode == 'decrypt' ? 'Decrypt Bits' : 'Encrypt Text'; ?></button>
-            <?php if ($is_generated || $error): ?>
-                <a href="<?php echo $_SERVER['PHP_SELF']; ?>" class="back-btn">← Back to Home</a>
-            <?php endif; ?>
-        </div>
+        <?php else: ?>
+            <label>ENTER CIPHER BITS (1s and 0s):</label>
+            <input type="text" name="inputString" placeholder="Ex: <?= $example_decrypt ?>" required value="<?= htmlspecialchars($_POST['inputString'] ?? '') ?>">
+            
+            <label>ENTER KEY (Secret):</label>
+            <input type="text" name="keyString" placeholder="Ex: VVV" required value="<?= htmlspecialchars($_POST['keyString'] ?? '') ?>">
+            
+            <button type="submit" class="main-submit" style="background:#333">GENERATE PLAINTEXT</button>
+        <?php endif; ?>
     </form>
 
     <?php if ($is_generated): ?>
-        <div class="bit-view">
-            <span class="label-tag">Input Bits:</span>
-            <span class="val-bin"><?php echo $input_bin; ?></span>
-            
-            <span class="label-tag">Key Bits:</span>
-            <span class="val-bin"><?php echo $key_bin; ?></span>
-            
-            <hr>
-            
-            <span class="label-tag">Output Bits:</span>
-            <span class="val-bin" style="color: #FF8C00; font-weight: bold;"><?php echo $res_bin; ?></span>
-            
-            <span class="label-tag">Generated Result (Text):</span>
-            <span class="val-text"><?php echo htmlspecialchars($res_text); ?></span>
+        <div class="result">
+            <small style="color:#999; text-transform:uppercase; font-size:0.7rem;">Result as Bits:</small><br>
+            <code style="word-break:break-all; color:#FF8C00; font-size:0.9rem;"><?= $res_bin ?></code><br><br>
+            <small style="color:#999; text-transform:uppercase; font-size:0.7rem;">Result as Text:</small><br>
+            <strong style="font-size:1.3rem; color:#333;"><?= htmlspecialchars($res_text) ?></strong>
         </div>
+        <a href="<?= $_SERVER['PHP_SELF'] ?>" class="back-btn">Click here to Reset</a>
     <?php endif; ?>
 </div>
 
